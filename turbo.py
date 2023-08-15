@@ -5,6 +5,7 @@ import tiktoken
 from googletrans import Translator
 from telegram.ext import *
 from api_keys import *
+import mongodb
 
 openai.api_key = OPENAI_KEY
 
@@ -153,11 +154,21 @@ prompt_list = """
     
 """
 
+test_prompt = mongodb.get_final_information("64db256b44fae6a818f4f69d")
+
 messages = [{
         "role": "system", "content": "You are a virtual assistant. You only answer the questions related to the school.",
         "role": "user", "content": "I want you to act as a virtual assistant for the customer service department of a school. Your job is to answer common questions that prospective students or their parents may have about the school. Your responses should be informative, concise, and friendly. If you are unable to answer a question, you should direct the person to contact the school phone number. Remember, you are the first point of contact for many prospective students and their families, so your demeanor and communication skills are key to making a positive impression of the school. Important note, you must not answer anything unrelated to the information of the school.",
         "role": "assistant", "content": "Hello, I am a virtual assistant, what can i help you?",
-        "role": "user", "content": "Here are the information about V2 \n " + prompt_list
+        "role": "user", "content": "Here are the information about V2 \n " + test_prompt + """ \n
+        ** Note: Answer the questions with only 20 - 30 words only so make the answers easy to read. You do not need to ask the user "any other questions?" every times."
+        ** Note: if you can't understand what the user input is, follow this example:
+        \nHuman: dasalw,
+        \nAI: I'm sorry, I don't understand what you are asking. Could you please rephrase your question?
+        ** Note: you must not answer anything else unrelated to the information of the institution. Follow this example:
+        \nHuman: what is the value of pi?,
+        \nAI: As a V2 virtual chat assistant, I can only answer to questions related to the institution.
+        """
     }]  
 
 async def handle_message(update, context):
@@ -177,7 +188,7 @@ async def handle_message(update, context):
     if contains_khmer_unicode(text):
         response: str = translate_en_to_kh(get_bot_response(translate_kh_to_en(text), messages, tokens))
     else:
-        response: str = get_bot_response(text + ". NOTE: YOU MUST NOT ANSWER ANYTHING UNRELATED TO THE INFORMATION OF THE SCHOOL. KEEP YOUR ANSWER SHORT.", messages, tokens)
+        response: str = get_bot_response(text + ". NOTE: PROVIDE ONLY THE INFORMATION RELATED THE SCHOOL. KEEP YOUR ANSWER SHORT.", messages, tokens)
 
     await update.message.reply_text(response)
     
